@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kebun Hati Fani 🌻</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0; height: 100vh; overflow: hidden;
+            background: linear-gradient(180deg, #84fab0 0%, #8fd3f4 100%);
+            font-family: 'Nunito', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        /* CARD GAME */
+        .game-area {
+            background: rgba(255, 255, 255, 0.9);
+            width: 95%; max-width: 400px;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            text-align: center;
+            position: relative;
+        }
+
+        /* HEADER */
+        .level-badge {
+            background: #ff6b81; color: white;
+            padding: 5px 15px; border-radius: 50px;
+            font-size: 0.9rem; font-weight: bold;
+            display: inline-block; margin-bottom: 10px;
+        }
+
+        /* VISUAL BUNGA (CSS ART) */
+        .garden-scene {
+            height: 180px; position: relative;
+            display: flex; align-items: flex-end; justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .pot {
+            width: 60px; height: 50px; background: #e17055;
+            border-radius: 5px 5px 15px 15px;
+            position: relative; z-index: 2;
+        }
+        .pot::after {
+            content:''; position: absolute; top: -10px; left: -5px;
+            width: 70px; height: 15px; background: #d35400; border-radius: 5px;
+        }
+
+        .stem {
+            width: 8px; height: 0px; background: #00b894;
+            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+            transition: height 0.5s; z-index: 1;
+        }
+        
+        .flower-head {
+            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%) scale(0);
+            width: 60px; height: 60px;
+            background: #ffeaa7; border-radius: 50%;
+            z-index: 3; transition: 0.5s;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; box-shadow: 0 0 0 10px #ff7675;
+        }
+
+        /* CLUE & KATA */
+        .clue-box {
+            color: #555; font-style: italic; margin-bottom: 15px; min-height: 40px;
+        }
+        
+        .word-display {
+            display: flex; justify-content: center; gap: 8px; margin-bottom: 20px;
+        }
+        .letter-slot {
+            width: 35px; height: 40px;
+            border-bottom: 3px solid #2d3436;
+            font-family: 'Fredoka One'; font-size: 1.5rem; color: #2d3436;
+            display: flex; align-items: end; justify-content: center;
+        }
+        .letter-slot.filled { border-color: #00b894; color: #00b894; animation: popLetter 0.3s; }
+
+        /* KEYBOARD */
+        .keyboard {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;
+        }
+        .key-btn {
+            width: 32px; height: 40px;
+            background: #fff; border: 1px solid #dfe6e9;
+            border-radius: 8px; font-weight: bold; color: #636e72;
+            cursor: pointer; box-shadow: 0 2px 0 #b2bec3;
+            transition: 0.1s;
+        }
+        .key-btn:active { transform: translateY(2px); box-shadow: none; }
+        .key-btn.used { background: #dfe6e9; color: #b2bec3; pointer-events: none; box-shadow: none; opacity: 0.6; }
+        .key-btn.correct { background: #55efc4; color: #00b894; border-color: #00b894; }
+        .key-btn.wrong { background: #ff7675; color: white; border-color: #d63031; }
+
+        /* NYAWA (AIR) */
+        .lives { position: absolute; top: 20px; right: 20px; font-size: 1.2rem; }
+
+        /* MODAL MENANG */
+        .win-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95); border-radius: 30px;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; padding: 20px;
+        }
+        .win-modal.active { display: flex; animation: fadeIn 0.5s; }
+        .btn-next {
+            background: #00cec9; color: white; border: none; padding: 10px 30px;
+            border-radius: 50px; font-weight: bold; margin-top: 20px; cursor: pointer;
+        }
+
+        /* FINAL SCREEN */
+        .final-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff; display: none; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; padding: 30px;
+        }
+        .btn-wa {
+            background: #25D366; color: white; text-decoration: none; padding: 15px 30px;
+            border-radius: 50px; font-weight: bold; margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
+        }
+
+        @keyframes popLetter { 0%{transform:scale(0);} 100%{transform:scale(1);} }
+        @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+
+    </style>
+</head>
+<body>
+
+    <div class="game-area">
+        <div class="level-badge">Level <span id="lvlNum">1</span></div>
+        <div class="lives">💧 <span id="lives">5</span></div>
+
+        <div class="garden-scene">
+            <div class="flower-head" id="flowerHead">😍</div>
+            <div class="stem" id="stem"></div>
+            <div class="pot"></div>
+        </div>
+
+        <div class="clue-box" id="clueText">Loading...</div>
+        
+        <div class="word-display" id="wordContainer"></div>
+        
+        <div class="keyboard" id="keyboard"></div>
+
+        <div class="win-modal" id="winModal">
+            <div style="font-size:4rem;">🌻✨</div>
+            <h2 style="color:#2d3436;">BENAR!</h2>
+            <p id="gombalText" style="color:#e17055; font-weight:bold;">...</p>
+            <button class="btn-next" onclick="nextLevel()">Lanjut Siram 🌱</button>
+        </div>
+    </div>
+
+    <div class="final-screen" id="finalScreen">
+        <div style="font-size:5rem;">💐💖</div>
+        <h1 style="color:#ff6b81; font-family:'Fredoka One';">KEBUN CINTA MEKAR!</h1>
+        <p style="color:#777;">
+            Kamu berhasil menebak semua kata hati Fahrul.<br>
+            Sekarang hati aku udah berbunga-bunga gara-gara kamu.
+        </p>
+        <a href="" id="waLink" class="btn-wa">Kirim Bunga ke Fahrul 💌</a>
+    </div>
+
+    <script>
+        // --- DATABASE KATA (SOAL) ---
+        const levels = [
+            {
+                word: "RINDU",
+                clue: "Perasaan yang muncul kalau aku lama gak liat wajah kamu.",
+                gombal: "Obat rindu cuma satu: Ketemu Fani."
+            },
+            {
+                word: "PELANGI",
+                clue: "Fenomena alam yang indah, muncul setelah hujan, warna-warni kayak senyummu.",
+                gombal: "Kamu itu pelangi yang mewarnai hari-hariku."
+            },
+            {
+                word: "RUMAH",
+                clue: "Tempat pulang paling nyaman, bukan bangunan.",
+                gombal: "Karena sejauh apapun aku pergi, pulangnya ke Hati Fani."
+            },
+            {
+                word: "CANTIK",
+                clue: "Satu kata yang mendeskripsikan Fani Anggi Lestari.",
+                gombal: "Cantiknya gak ada obat, bikin aku pusing!"
+            },
+            {
+                word: "JODOH",
+                clue: "Takdir Tuhan yang mempertemukan kita (5 Huruf).",
+                gombal: "Semoga kita beneran jodoh dunia akhirat ya. Aamiin."
+            }
+        ];
+
+        let currentLvl = 0;
+        let lives = 5;
+        let guessedLetters = [];
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // --- AUDIO ---
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+
+            if(type === 'correct') {
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(1000, audioCtx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+            }
+            osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // --- GAME LOGIC ---
+        function initLevel() {
+            const data = levels[currentLvl];
+            guessedLetters = [];
+            lives = 5;
+            
+            // Reset UI
+            document.getElementById('lvlNum').innerText = currentLvl + 1;
+            document.getElementById('lives').innerText = lives;
+            document.getElementById('clueText').innerText = `"${data.clue}"`;
+            document.getElementById('winModal').classList.remove('active');
+            
+            // Reset Bunga
+            document.getElementById('stem').style.height = '0px';
+            document.getElementById('flowerHead').style.transform = 'translateX(-50%) scale(0)';
+            
+            // Render Slot Huruf
+            const wordBox = document.getElementById('wordContainer');
+            wordBox.innerHTML = '';
+            for(let char of data.word) {
+                const slot = document.createElement('div');
+                slot.className = 'letter-slot';
+                slot.dataset.char = char;
+                wordBox.appendChild(slot);
+            }
+
+            // Render Keyboard
+            renderKeyboard();
+        }
+
+        function renderKeyboard() {
+            const kbd = document.getElementById('keyboard');
+            kbd.innerHTML = '';
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+            chars.forEach(char => {
+                const btn = document.createElement('button');
+                btn.className = 'key-btn';
+                btn.innerText = char;
+                btn.onclick = () => handleGuess(char, btn);
+                kbd.appendChild(btn);
+            });
+        }
+
+        function handleGuess(char, btn) {
+            btn.classList.add('used');
+            btn.onclick = null;
+            
+            const data = levels[currentLvl];
+            if (data.word.includes(char)) {
+                // BENAR
+                btn.classList.add('correct');
+                playSound('correct');
+                
+                // Isi slot
+                const slots = document.querySelectorAll('.letter-slot');
+                let correctCount = 0;
+                slots.forEach(slot => {
+                    if(slot.dataset.char === char) {
+                        slot.innerText = char;
+                        slot.classList.add('filled');
+                    }
+                    if(slot.classList.contains('filled')) correctCount++;
+                });
+
+                // Tumbuhkan Bunga (Progress Visual)
+                const progress = correctCount / data.word.length;
+                document.getElementById('stem').style.height = (progress * 100) + 'px';
+                
+                // Cek Menang
+                if(correctCount === data.word.length) {
+                    gameWin();
+                }
+
+            } else {
+                // SALAH
+                btn.classList.add('wrong');
+                lives--;
+                document.getElementById('lives').innerText = lives;
+                playSound('wrong');
+                
+                if(lives === 0) {
+                    alert("Yah layu bunganya... Coba lagi ya sayang!");
+                    initLevel(); // Restart level
+                }
+            }
+        }
+
+        function gameWin() {
+            playSound('win');
+            // Efek Bunga Mekar
+            document.getElementById('stem').style.height = '120px';
+            document.getElementById('flowerHead').style.transform = 'translateX(-50%) scale(1)';
+            
+            setTimeout(() => {
+                document.getElementById('gombalText').innerText = levels[currentLvl].gombal;
+                document.getElementById('winModal').classList.add('active');
+            }, 800);
+        }
+
+        function nextLevel() {
+            currentLvl++;
+            if(currentLvl < levels.length) {
+                initLevel();
+            } else {
+                finishGame();
+            }
+        }
+
+        function finishGame() {
+            document.querySelector('.game-area').style.display = 'none';
+            document.getElementById('finalScreen').style.display = 'flex';
+            
+            const waText = "Sayang!%20Aku%20berhasil%20tebak%20semua%20kata%20di%20Kebun%20Cinta.%20RINDU%2C%20PELANGI%2C%20RUMAH%2C%20CANTIK%2C%20JODOH.%20So%20sweet%20banget%20sih%20%F0%9F%8C%BB%E2%9D%A4%EF%B8%8F";
+            document.getElementById('waLink').href = `https://wa.me/62895622188096?text=${waText}`;
+        }
+
+        // Start
+        initLevel();
+
+    </script>
+</body>
+</html>
